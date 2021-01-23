@@ -38,10 +38,22 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.activity.result.ActivityResultCallback
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContract
+import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import com.raywenderlich.android.librarian.R
 import com.raywenderlich.android.librarian.model.Book
 import com.raywenderlich.android.librarian.model.Genre
 import com.raywenderlich.android.librarian.model.relations.BookAndGenre
@@ -60,64 +72,95 @@ private const val REQUEST_CODE_ADD_BOOK = 201
 @AndroidEntryPoint
 class BooksFragment : Fragment() {
 
-  @Inject
-  lateinit var repository: LibrarianRepository
+    @Inject
+    lateinit var repository: LibrarianRepository
 
-  private val _booksState = MutableLiveData(emptyList<BookAndGenre>())
-  private val _genresState = MutableLiveData<List<Genre>>()
-  var filter: Filter? = null
+    private val _booksState = MutableLiveData(emptyList<BookAndGenre>())
+    private val _genresState = MutableLiveData<List<Genre>>()
+    var filter: Filter? = null
 
-  override fun onCreateView(
-    inflater: LayoutInflater, container: ViewGroup?,
-    savedInstanceState: Bundle?
-  ): View? {
-    return ComposeView(requireContext()).apply {
-
+    override fun onCreateView(
+            inflater: LayoutInflater, container: ViewGroup?,
+            savedInstanceState: Bundle?
+    ): View? {
+        return ComposeView(requireContext()).apply {
+            setContent {
+                BooksContent()
+            }
+        }
     }
-  }
 
-  override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-    super.onViewCreated(view, savedInstanceState)
-    loadGenres()
-    loadBooks()
-  }
+    @Composable
+    fun BooksContent() {
+        Scaffold(
+                topBar = { BooksTopBar() },
+                floatingActionButton = { AddNewBook() }
 
-  fun loadGenres() {
-    lifecycleScope.launch {
-      val genres = repository.getGenres()
+        ) {
 
-      _genresState.value = genres
+        }
     }
-  }
 
-  fun loadBooks() {
-    lifecycleScope.launch {
-
-      val books = when (val currentFilter = filter) {
-        is ByGenre -> repository.getBooksByGenre(currentFilter.genreId)
-        is ByRating -> repository.getBooksByRating(currentFilter.rating)
-        else -> repository.getBooks()
-      }
-
-      _booksState.value = books
+    @Composable
+    @Preview
+    fun AddNewBook() {
+        FloatingActionButton(
+                onClick = { showAddBook() },
+                content = { Icon(Icons.Filled.Add) }
+        )
     }
-  }
 
-  fun removeBook(book: Book) {
-    lifecycleScope.launch {
-      repository.removeBook(book)
-      loadBooks()
+    @Composable
+    fun BooksTopBar() {
+        TopAppBar(
+                title = { Text(text = stringResource(id = R.string.my_books_title)) },
+                backgroundColor = colorResource(id = R.color.colorPrimary),
+                contentColor = Color.White
+        )
     }
-  }
 
-  private fun showAddBook() {
-    val addBook = registerForActivityResult(AddBookContract()) { isBookCreated ->
-      if (isBookCreated) {
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        loadGenres()
         loadBooks()
-        activity?.toast("Book added!")
-      }
     }
 
-    addBook.launch(REQUEST_CODE_ADD_BOOK)
-  }
+    fun loadGenres() {
+        lifecycleScope.launch {
+            val genres = repository.getGenres()
+
+            _genresState.value = genres
+        }
+    }
+
+    fun loadBooks() {
+        lifecycleScope.launch {
+
+            val books = when (val currentFilter = filter) {
+              is ByGenre -> repository.getBooksByGenre(currentFilter.genreId)
+              is ByRating -> repository.getBooksByRating(currentFilter.rating)
+                else -> repository.getBooks()
+            }
+
+            _booksState.value = books
+        }
+    }
+
+    fun removeBook(book: Book) {
+        lifecycleScope.launch {
+            repository.removeBook(book)
+            loadBooks()
+        }
+    }
+
+    private fun showAddBook() {
+        val addBook = registerForActivityResult(AddBookContract()) { isBookCreated ->
+            if (isBookCreated) {
+                loadBooks()
+                activity?.toast("Book added!")
+            }
+        }
+
+        addBook.launch(REQUEST_CODE_ADD_BOOK)
+    }
 }
