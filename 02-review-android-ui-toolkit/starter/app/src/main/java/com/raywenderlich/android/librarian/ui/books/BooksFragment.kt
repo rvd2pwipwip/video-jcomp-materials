@@ -38,9 +38,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.ActivityResultCallback
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -82,7 +79,7 @@ class BooksFragment : Fragment() {
     override fun onCreateView(
             inflater: LayoutInflater, container: ViewGroup?,
             savedInstanceState: Bundle?
-    ): View? {
+    ): View {
         return ComposeView(requireContext()).apply {
             setContent {
                 BooksContent()
@@ -91,6 +88,7 @@ class BooksFragment : Fragment() {
     }
 
     @Composable
+    @Preview
     fun BooksContent() {
         Scaffold(
                 topBar = { BooksTopBar() },
@@ -102,7 +100,6 @@ class BooksFragment : Fragment() {
     }
 
     @Composable
-    @Preview
     fun AddNewBook() {
         FloatingActionButton(
                 onClick = { showAddBook() },
